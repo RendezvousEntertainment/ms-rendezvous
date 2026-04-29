@@ -4,7 +4,7 @@ services:
   bot:
     build: .
     environment:
-      BOT_TOKEN: bananas
-      BOT_NAME: Stephen
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_NAME: ${BOT_NAME}
       BOT_DOMAIN: https://git.rendezvous.dev
       BOT_REPO: rendezvous-entertainment/ksp2redux
