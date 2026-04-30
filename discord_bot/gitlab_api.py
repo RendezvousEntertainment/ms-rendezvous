@@ -11,7 +11,6 @@ from urllib.parse import quote
 import aiohttp
 
 _TIMEOUT = aiohttp.ClientTimeout(total=5)
-_log = logging.getLogger(__name__)
 
 
 async def fetch_titles(
@@ -33,7 +32,7 @@ async def fetch_titles(
     if not issues and not merge_requests:
         return {}
     if not token:
-        _log.warning(
+        logging.warning(
             "fetch_titles: no GitLab token configured; "
             "skipping title lookup for %d issue(s) and %d MR(s) "
             "(set BOT_GITLAB_TOKEN to enable)",
@@ -56,7 +55,7 @@ async def fetch_titles(
             ) as r:
                 if r.status != 200:
                     body = (await r.text())[:200]
-                    _log.warning(
+                    logging.warning(
                         "fetch_titles: %s %s returned HTTP %s: %s",
                         kind,
                         iid,
@@ -67,7 +66,7 @@ async def fetch_titles(
                 try:
                     data = await r.json()
                 except (aiohttp.ContentTypeError, ValueError) as e:
-                    _log.warning(
+                    logging.warning(
                         "fetch_titles: %s %s returned non-JSON body: %s",
                         kind,
                         iid,
@@ -75,7 +74,7 @@ async def fetch_titles(
                     )
                     return None
         except asyncio.TimeoutError:
-            _log.warning(
+            logging.warning(
                 "fetch_titles: %s %s timed out after %ss (url=%s)",
                 kind,
                 iid,
@@ -84,7 +83,7 @@ async def fetch_titles(
             )
             return None
         except aiohttp.ClientError as e:
-            _log.warning(
+            logging.warning(
                 "fetch_titles: %s %s network error: %s (url=%s)",
                 kind,
                 iid,
@@ -94,7 +93,7 @@ async def fetch_titles(
             return None
         title = data.get("title") if isinstance(data, dict) else None
         if not isinstance(title, str):
-            _log.warning(
+            logging.warning(
                 "fetch_titles: %s %s response missing 'title' field "
                 "(keys=%s)",
                 kind,
