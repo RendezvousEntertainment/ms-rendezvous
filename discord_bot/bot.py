@@ -25,6 +25,7 @@ async def on_ready():
     """This callback is triggered when the bot is ready"""
     logging.info(f"Logged in as {bot.user}")
     logging.info(str(bot.user))
+    logging.info("Version 0.1.0")
 
 
 @bot.event
