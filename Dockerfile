@@ -1,4 +1,8 @@
-FROM python:3.11 
+FROM python:3.11
+
+# Unbuffered stdout/stderr so log lines reach Docker / Portainer immediately
+# instead of sitting in Python's stdio buffer until it fills.
+ENV PYTHONUNBUFFERED=1
 
 RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
 
