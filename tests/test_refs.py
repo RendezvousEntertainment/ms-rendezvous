@@ -46,6 +46,19 @@ def test_find_issues_at_string_boundaries():
     assert find_issues("look at (#42)!") == ["42"]
 
 
+def test_find_issues_ignores_discord_channel_mentions():
+    # Discord renders channel mentions as `<#channel_id>` — must not trigger.
+    assert find_issues("see <#1234567890>") == []
+    assert find_issues("in <#1234567890> there's a thing") == []
+    # A real ref alongside a channel mention still resolves.
+    assert find_issues("see <#1234567890> about #42") == ["42"]
+
+
+def test_find_merge_requests_ignores_discord_mention_like_syntax():
+    # Symmetric with the issue case — `<!123>` shouldn't register either.
+    assert find_merge_requests("see <!1234567890>") == []
+
+
 def test_find_merge_requests_basic():
     assert find_merge_requests("merged !17") == ["17"]
 

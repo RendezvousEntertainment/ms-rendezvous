@@ -6,10 +6,11 @@ Kept free of any discord.py imports so it can be unit-tested in isolation.
 
 import re
 
-# Match #nnn / !nnn only when not preceded by a word char or another # / !,
-# so things like `username#1234` or `##123` don't trigger.
-ISSUE_RE = re.compile(r"(?<![\w!#])#(\d+)\b")
-MR_RE = re.compile(r"(?<![\w!#])!(\d+)\b")
+# Match #nnn / !nnn only when not preceded by a word char, another # / !,
+# or `<` (which would make it a Discord mention like `<#channel_id>`),
+# so things like `username#1234`, `##123`, or `<#1234567890>` don't trigger.
+ISSUE_RE = re.compile(r"(?<![\w!#<])#(\d+)\b")
+MR_RE = re.compile(r"(?<![\w!#<])!(\d+)\b")
 
 
 def _ordered_unique(numbers: list[str]) -> list[str]:
