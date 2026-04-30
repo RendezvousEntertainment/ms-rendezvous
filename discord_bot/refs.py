@@ -38,16 +38,49 @@ def mr_url(n: str, repo_url: str) -> str:
     return f"{repo_url}/-/merge_requests/{n}"
 
 
-def build_reference_lines(content: str, repo_url: str) -> list[str]:
+def _escape_link_text(s: str) -> str:
+    """Escape characters that would break a `[text](url)` markdown link."""
+    return (
+        s.replace("\\", "\\\\")
+        .replace("[", "\\[")
+        .replace("]", "\\]")
+        .replace("\n", " ")
+        .replace("\r", " ")
+    )
+
+
+def build_reference_lines(
+    content: str,
+    repo_url: str,
+    titles: dict[tuple[str, str], str] | None = None,
+) -> list[str]:
     """Return embed-body lines describing every issue / MR ref in `content`.
 
-    Issues come first, then merge requests; within each group, refs appear in
-    the order they're first encountered. Returns an empty list when there are
-    no references.
+    If `titles` is provided, refs whose (kind, iid) key has a title in the
+    dict are rendered as a markdown link `[title](url)`. Refs without a
+    title in the dict fall back to a plain `<url>` rendering. `kind` is
+    'issue' or 'mr'.
+
+    Issues come first, then merge requests; within each group, refs appear
+    in the order they're first encountered. Returns an empty list when
+    there are no references.
     """
+    titles = titles or {}
     lines: list[str] = []
     for n in find_issues(content):
-        lines.append(f"Issue #{n}: {issue_url(n, repo_url)}")
+        url = issue_url(n, repo_url)
+        title = titles.get(("issue", n))
+        if title:
+            lines.append(f"Issue #{n}: [{_escape_link_text(title)}]({url})")
+        else:
+            lines.append(f"Issue #{n}: {url}")
     for n in find_merge_requests(content):
-        lines.append(f"Merge Request !{n}: {mr_url(n, repo_url)}")
+        url = mr_url(n, repo_url)
+        title = titles.get(("mr", n))
+        if title:
+            lines.append(
+                f"Merge Request !{n}: [{_escape_link_text(title)}]({url})"
+            )
+        else:
+            lines.append(f"Merge Request !{n}: {url}")
     return lines

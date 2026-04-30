@@ -112,3 +112,61 @@ def test_build_reference_lines_ignores_noise():
     assert build_reference_lines(text, REPO_URL) == [
         f"Issue #5: {REPO_URL}/-/issues/5",
     ]
+
+
+def test_build_reference_lines_renders_issue_title_as_markdown_link():
+    titles = {("issue", "5"): "Fix the launch pad"}
+    assert build_reference_lines("see #5", REPO_URL, titles) == [
+        f"Issue #5: [Fix the launch pad]({REPO_URL}/-/issues/5)",
+    ]
+
+
+def test_build_reference_lines_renders_mr_title_as_markdown_link():
+    titles = {("mr", "7"): "Refactor orbital mechanics"}
+    assert build_reference_lines("merged !7", REPO_URL, titles) == [
+        f"Merge Request !7: [Refactor orbital mechanics]({REPO_URL}/-/merge_requests/7)",
+    ]
+
+
+def test_build_reference_lines_falls_back_to_url_when_title_missing():
+    # `#5` has a title; `#6` doesn't — second one keeps plain-URL rendering.
+    titles = {("issue", "5"): "Has a title"}
+    assert build_reference_lines("#5 #6", REPO_URL, titles) == [
+        f"Issue #5: [Has a title]({REPO_URL}/-/issues/5)",
+        f"Issue #6: {REPO_URL}/-/issues/6",
+    ]
+
+
+def test_build_reference_lines_empty_titles_dict_behaves_like_none():
+    assert build_reference_lines("#5", REPO_URL, {}) == [
+        f"Issue #5: {REPO_URL}/-/issues/5",
+    ]
+
+
+def test_build_reference_lines_escapes_brackets_and_backslashes_in_title():
+    # `]` would terminate the markdown link early; `\` and `[` also need
+    # escaping so the link renders verbatim.
+    titles = {("issue", "5"): r"Title with [brackets] and \ backslash"}
+    assert build_reference_lines("#5", REPO_URL, titles) == [
+        rf"Issue #5: [Title with \[brackets\] and \\ backslash]({REPO_URL}/-/issues/5)",
+    ]
+
+
+def test_build_reference_lines_collapses_newlines_in_title():
+    titles = {("issue", "5"): "Line one\nLine two\rLine three"}
+    assert build_reference_lines("#5", REPO_URL, titles) == [
+        f"Issue #5: [Line one Line two Line three]({REPO_URL}/-/issues/5)",
+    ]
+
+
+def test_build_reference_lines_mixes_titled_issues_and_mrs():
+    titles = {
+        ("issue", "5"): "First",
+        ("mr", "12"): "Some MR",
+    }
+    text = "shipped !12 which closes #5 and #6"
+    assert build_reference_lines(text, REPO_URL, titles) == [
+        f"Issue #5: [First]({REPO_URL}/-/issues/5)",
+        f"Issue #6: {REPO_URL}/-/issues/6",
+        f"Merge Request !12: [Some MR]({REPO_URL}/-/merge_requests/12)",
+    ]

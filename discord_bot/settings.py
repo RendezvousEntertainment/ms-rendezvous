@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     name: str = "Discord Bot"
     domain: str = "https://git.rendezvous.dev"
     repo: str = "rendezvous-entertainment/ksp2redux"
+    gitlab_token: str = ""
 
     @property
     def repo_url(self) -> str:

@@ -6,3 +6,4 @@ services:
       BOT_NAME: ${BOT_NAME}
       BOT_DOMAIN: https://git.rendezvous.dev
       BOT_REPO: rendezvous-entertainment/ksp2redux
+      BOT_GITLAB_TOKEN: ${BOT_GITLAB_TOKEN}
