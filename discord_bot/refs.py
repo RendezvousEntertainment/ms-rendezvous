@@ -5,6 +5,19 @@ Kept free of any discord.py imports so it can be unit-tested in isolation.
 """
 
 import re
+from typing import NamedTuple
+
+
+class RefInfo(NamedTuple):
+    """Metadata for a single ref needed to render its embed line.
+
+    `state` is the human-readable status marker ("open", "closed",
+    "merged", "draft") or "" when unknown — rendering omits the marker
+    in the empty case.
+    """
+
+    title: str
+    state: str = ""
 
 # Match #nnn / !nnn only when not preceded by a word char, another # / !,
 # or `<` (which would make it a Discord mention like `<#channel_id>`),
@@ -53,35 +66,32 @@ def _escape_link_text(s: str) -> str:
 def build_reference_lines(
     content: str,
     repo_url: str,
-    titles: dict[tuple[str, str], str] | None = None,
+    info: dict[tuple[str, str], RefInfo] | None = None,
 ) -> list[str]:
     """Return embed-body lines describing every issue / MR ref in `content`.
 
-    If `titles` is provided, refs whose (kind, iid) key has a title in the
-    dict are rendered as a markdown link `[title](url)`. Refs without a
-    title in the dict fall back to a plain `<url>` rendering. `kind` is
-    'issue' or 'mr'.
+    If `info` is provided, refs whose (kind, iid) key has a `RefInfo`
+    entry are rendered with title (as a markdown link `[title](url)`)
+    and/or status marker `(state)` between the number and the colon.
+    Either field may be empty: a missing title falls back to plain
+    `<url>` rendering, and a missing state simply omits the marker.
+    `kind` is 'issue' or 'mr'.
 
     Issues come first, then merge requests; within each group, refs appear
     in the order they're first encountered. Returns an empty list when
     there are no references.
     """
-    titles = titles or {}
+    info = info or {}
     lines: list[str] = []
     for n in find_issues(content):
-        url = issue_url(n, repo_url)
-        title = titles.get(("issue", n))
-        if title:
-            lines.append(f"Issue #{n}: [{_escape_link_text(title)}]({url})")
-        else:
-            lines.append(f"Issue #{n}: {url}")
+        lines.append(_render_line("Issue", "#", n, issue_url(n, repo_url), info.get(("issue", n))))
     for n in find_merge_requests(content):
-        url = mr_url(n, repo_url)
-        title = titles.get(("mr", n))
-        if title:
-            lines.append(
-                f"Merge Request !{n}: [{_escape_link_text(title)}]({url})"
-            )
-        else:
-            lines.append(f"Merge Request !{n}: {url}")
+        lines.append(_render_line("Merge Request", "!", n, mr_url(n, repo_url), info.get(("mr", n))))
     return lines
+
+
+def _render_line(label: str, sigil: str, n: str, url: str, ri: RefInfo | None) -> str:
+    marker = f" ({ri.state})" if ri and ri.state else ""
+    if ri and ri.title:
+        return f"{label} {sigil}{n}{marker}: [{_escape_link_text(ri.title)}]({url})"
+    return f"{label} {sigil}{n}{marker}: {url}"

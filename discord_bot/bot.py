@@ -3,8 +3,8 @@ import logging
 import aiohttp
 import discord
 from discord.ext import commands
-from gitlab_api import fetch_titles
-from refs import build_reference_lines, find_issues, find_merge_requests
+from gitlab_api import fetch_ref_info
+from refs import RefInfo, build_reference_lines, find_issues, find_merge_requests
 from settings import Settings
 
 # bots need the message content intent to read messages
@@ -36,10 +36,10 @@ async def on_message(message: discord.Message):
 
     issues = find_issues(message.content)
     mrs = find_merge_requests(message.content)
-    titles: dict[tuple[str, str], str] = {}
+    info: dict[tuple[str, str], RefInfo] = {}
     if (issues or mrs) and settings.gitlab_token:
         async with aiohttp.ClientSession() as session:
-            titles = await fetch_titles(
+            info = await fetch_ref_info(
                 session,
                 settings.domain,
                 settings.repo,
@@ -48,7 +48,7 @@ async def on_message(message: discord.Message):
                 settings.gitlab_token,
             )
 
-    lines = build_reference_lines(message.content, settings.repo_url, titles)
+    lines = build_reference_lines(message.content, settings.repo_url, info)
     if lines:
         embed = discord.Embed(description="\n".join(lines))
         await message.reply(embed=embed, mention_author=False)
