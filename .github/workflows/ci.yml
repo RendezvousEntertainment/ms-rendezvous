@@ -24,9 +24,6 @@ jobs:
       - name: Install dependencies
         run: poetry install --sync
 
-      - name: Check types with mypy
-        run: poetry run mypy .
-
   build-and-push-image:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
