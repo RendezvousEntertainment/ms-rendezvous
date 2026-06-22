@@ -60,7 +60,11 @@ async def fetch_open_merge_requests(
     project = quote(repo, safe="")
     base = f"{domain.rstrip('/')}/api/v4/projects/{project}"
     headers = {"PRIVATE-TOKEN": token}
-    async with session.get(f"{base}/merge_requests?state=opened") as r:
+    async with session.get(
+        f"{base}/merge_requests?state=opened",
+        headers=headers,
+        timeout=_TIMEOUT,
+    ) as r:
         if r.status != 200:
             body = (await r.text())[:200]
             logging.warning(
