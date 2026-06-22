@@ -41,6 +41,45 @@ def _mr_state(data: dict) -> str:
         return "merged"
     return ""
 
+async def fetch_open_merge_requests(
+    session: aiohttp.ClientSession,
+    domain: str,
+    repo: str,
+    token: str
+) -> list[str]:
+    """
+        Fetch all open merge request IIDs (max of 20)
+    """
+    if not token:
+        logging.warning(
+            "fetch_open_merge_requests: no GitLab token configured; "
+            "skipping lookup for open merge requests "
+            "(set BOT_GITLAB_TOKEN to enable)",
+        )
+        return []
+    project = quote(repo, safe="")
+    base = f"{domain.rstrip('/')}/api/v4/projects/{project}"
+    headers = {"PRIVATE-TOKEN": token}
+    async with session.get(f"{base}/merge_requests?state=opened") as r:
+        if r.status != 200:
+            body = (await r.text())[:200]
+            logging.warning(
+                "fetch_open_merge_requests: returned HTTP %s: %s",
+                r.status,
+                body,
+            )
+            return None
+        try:
+            data = await r.json()
+        except (aiohttp.ContentTypeError, ValueError) as e:
+            logging.warning(
+                "fetch_open_merge_requests: returned non-JSON body: %s",
+                e,
+            )
+            return None
+    return [str(mr['iid']) for mr in data]
+
+
 
 async def fetch_ref_info(
     session: aiohttp.ClientSession,
