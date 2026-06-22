@@ -2,6 +2,7 @@ import logging
 
 import aiohttp
 import discord
+from discord.ext import commands
 from gitlab_api import fetch_ref_info, fetch_open_merge_requests
 from refs import RefInfo, build_reference_lines, find_issues, find_merge_requests
 from settings import Settings
