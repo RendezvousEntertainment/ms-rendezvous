@@ -64,11 +64,17 @@ def _escape_link_text(s: str) -> str:
 
 
 def build_reference_lines(
-    content: str,
+    issues: list[str],
+    mrs: list[str],
     repo_url: str,
     info: dict[tuple[str, str], RefInfo] | None = None,
 ) -> list[str]:
-    """Return embed-body lines describing every issue / MR ref in `content`.
+    """Return embed-body lines for the given issue / MR refs.
+
+    `issues` and `mrs` are the IID strings to render (callers obtain them
+    via `find_issues` / `find_merge_requests`, plus any extras such as the
+    `!open` listing). Each list is deduped defensively, preserving first
+    occurrence.
 
     If `info` is provided, refs whose (kind, iid) key has a `RefInfo`
     entry are rendered with title (as a markdown link `[title](url)`)
@@ -77,15 +83,14 @@ def build_reference_lines(
     `<url>` rendering, and a missing state simply omits the marker.
     `kind` is 'issue' or 'mr'.
 
-    Issues come first, then merge requests; within each group, refs appear
-    in the order they're first encountered. Returns an empty list when
-    there are no references.
+    Issues come first, then merge requests. Returns an empty list when
+    both inputs are empty.
     """
     info = info or {}
     lines: list[str] = []
-    for n in find_issues(content):
+    for n in _ordered_unique(issues):
         lines.append(_render_line("Issue", "#", n, issue_url(n, repo_url), info.get(("issue", n))))
-    for n in find_merge_requests(content):
+    for n in _ordered_unique(mrs):
         lines.append(_render_line("Merge Request", "!", n, mr_url(n, repo_url), info.get(("mr", n))))
     return lines
 

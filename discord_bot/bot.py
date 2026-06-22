@@ -26,7 +26,7 @@ async def on_ready():
     """This callback is triggered when the bot is ready"""
     logging.info(f"Logged in as {bot.user}")
     logging.info(str(bot.user))
-    logging.info("Version 0.2.0")
+    logging.info("Version 0.2.1")
 
 
 @bot.event
@@ -37,22 +37,29 @@ async def on_message(message: discord.Message):
 
     issues = find_issues(message.content)
     mrs = find_merge_requests(message.content)
-    if re.search('\b!open\b', message.content):
-        mrs += await fetch_open_merge_requests(session, settings.domain, settings.repo, settings.gitlab_token)
-    
-    info: dict[tuple[str, str], RefInfo] = {}
-    if (issues or mrs) and settings.gitlab_token:
-        async with aiohttp.ClientSession() as session:
-            info = await fetch_ref_info(
-                session,
-                settings.domain,
-                settings.repo,
-                issues,
-                mrs,
-                settings.gitlab_token,
-            )
+    wants_open = re.search(r"(?<!\S)!open\b", message.content) is not None
 
-    lines = build_reference_lines(message.content, settings.repo_url, info)
+    info: dict[tuple[str, str], RefInfo] = {}
+    if settings.gitlab_token and (issues or mrs or wants_open):
+        async with aiohttp.ClientSession() as session:
+            if wants_open:
+                open_mrs = await fetch_open_merge_requests(
+                    session, settings.domain, settings.repo, settings.gitlab_token
+                )
+                for n in open_mrs:
+                    if n not in mrs:
+                        mrs.append(n)
+            if issues or mrs:
+                info = await fetch_ref_info(
+                    session,
+                    settings.domain,
+                    settings.repo,
+                    issues,
+                    mrs,
+                    settings.gitlab_token,
+                )
+
+    lines = build_reference_lines(issues, mrs, settings.repo_url, info)
     if lines:
         embed = discord.Embed(description="\n".join(lines))
         await message.reply(embed=embed, mention_author=False)
