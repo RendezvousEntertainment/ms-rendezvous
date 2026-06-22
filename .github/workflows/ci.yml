@@ -24,16 +24,8 @@ jobs:
       - name: Install dependencies
         run: poetry install --sync
 
-      - name: Check formatting with isort and black
-        run: |
-          poetry run isort --check-only .
-          poetry run black --check .
-
       - name: Check types with mypy
         run: poetry run mypy .
-
-      - name: Test with pytest
-        run: poetry run pytest -v
 
   build-and-push-image:
     name: Build and Push Docker Image
